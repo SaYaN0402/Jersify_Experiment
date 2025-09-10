@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { Star } from "lucide-react"; // for ratings icon
+import { Star } from "lucide-react"; // ⭐ icon
 
 const JerseyProductPage = () => {
   const [size, setSize] = useState("M");
   const [quantity, setQuantity] = useState(1);
-  const [selectedImage, setSelectedImage] = useState("/src/assets/j1.jpg"); // Default main image
+  const [selectedImage, setSelectedImage] = useState("/src/assets/j1.jpg");
 
-  // Example rating data
+  // Ratings Data
   const ratings = {
     5: 120,
     4: 80,
@@ -15,28 +15,49 @@ const JerseyProductPage = () => {
     1: 10,
   };
 
-  // Initial sample reviews
+  const totalRatings = Object.values(ratings).reduce((a, b) => a + b, 0);
+  const averageRating =
+    (
+      (5 * ratings[5] +
+        4 * ratings[4] +
+        3 * ratings[3] +
+        2 * ratings[2] +
+        1 * ratings[1]) /
+      totalRatings
+    ).toFixed(1);
+
+  // Reviews
   const [reviews, setReviews] = useState([
-    { id: 1, name: "Ram", text: "Great quality jersey! Feels like the real deal." },
-    { id: 2, name: "Sam", text: "Fabric is awesome, fits perfectly. Worth the price!" },
+    { id: 1, name: "Ram", text: "Great quality jersey! Feels like the real deal.", stars: 5 },
+    { id: 2, name: "Sam", text: "Fabric is awesome, fits perfectly. Worth the price!", stars: 4 },
   ]);
 
   const [newName, setNewName] = useState("");
   const [newReview, setNewReview] = useState("");
+  const [newRating, setNewRating] = useState(0);
+
+  // ✅ Simulate purchase status (in real app, backend will verify this)
+  const [hasPurchased] = useState(true); // set to false to test restriction
 
   const handleAddReview = () => {
-    if (newName.trim() && newReview.trim()) {
+    if (!hasPurchased) {
+      alert("⚠️ You must purchase this product before leaving a review.");
+      return;
+    }
+    if (newName.trim() && newReview.trim() && newRating > 0) {
       const newEntry = {
         id: Date.now(),
         name: newName,
         text: newReview,
+        stars: newRating,
       };
-      setReviews([newEntry, ...reviews]); // add latest on top
+      setReviews([newEntry, ...reviews]);
       setNewName("");
       setNewReview("");
+      setNewRating(0);
       alert("✅ Review submitted successfully!");
     } else {
-      alert("⚠️ Please enter both name and review.");
+      alert("⚠️ Please fill all fields and give a star rating.");
     }
   };
 
@@ -45,7 +66,6 @@ const JerseyProductPage = () => {
       <div className="flex flex-col lg:flex-row gap-10">
         {/* Left Section - Images */}
         <div className="flex flex-col lg:flex-row gap-4">
-          {/* Thumbnails */}
           <div className="flex lg:flex-col gap-2">
             <img
               src="/src/assets/j1.jpg"
@@ -60,8 +80,6 @@ const JerseyProductPage = () => {
               onClick={() => setSelectedImage("/src/assets/j2.jpg")}
             />
           </div>
-
-          {/* Main Image */}
           <div>
             <img
               src={selectedImage}
@@ -71,7 +89,7 @@ const JerseyProductPage = () => {
           </div>
         </div>
 
-        {/* Right Section - Product Info */}
+        {/* Right Section - Info */}
         <div className="flex-1">
           <h1 className="text-3xl font-bold mb-2">
             RL Madrid Third Jersey 25 26 Season PLAYER VERSION
@@ -81,7 +99,49 @@ const JerseyProductPage = () => {
             <span className="text-xl font-semibold text-green-600">₹1,299.00</span>
           </div>
 
-          {/* Size Selection */}
+          {/* ⭐ Overall Rating */}
+          <div className="relative inline-block group mb-6">
+            <div className="flex items-center cursor-pointer">
+              <span className="text-lg font-semibold mr-1">{averageRating}</span>
+              <div className="flex text-yellow-500">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star
+                    key={i}
+                    size={18}
+                    fill={i < Math.round(averageRating) ? "currentColor" : "none"}
+                  />
+                ))}
+              </div>
+              <span className="ml-2 text-blue-600">{totalRatings} ratings</span>
+            </div>
+
+            {/* Hover Box */}
+            <div className="absolute hidden group-hover:block top-8 left-0 bg-white border shadow-lg rounded-lg p-4 w-64 z-10">
+              <h3 className="font-semibold mb-2">
+                ⭐ {averageRating} out of 5
+              </h3>
+              <p className="text-sm text-gray-600 mb-2">{totalRatings} global ratings</p>
+              {Object.entries(ratings)
+                .sort(([a], [b]) => b - a)
+                .map(([star, count]) => {
+                  const percent = ((count / totalRatings) * 100).toFixed(0);
+                  return (
+                    <div key={star} className="flex items-center text-sm mb-1">
+                      <span className="w-10">{star} star</span>
+                      <div className="flex-1 h-3 bg-gray-200 rounded mx-2">
+                        <div
+                          className="h-3 bg-orange-500 rounded"
+                          style={{ width: `${percent}%` }}
+                        ></div>
+                      </div>
+                      <span>{percent}%</span>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+
+          {/* Size */}
           <div className="mb-4">
             <h2 className="font-medium mb-2">Size</h2>
             <div className="flex gap-2">
@@ -99,7 +159,7 @@ const JerseyProductPage = () => {
             </div>
           </div>
 
-          {/* Quantity and Actions */}
+          {/* Quantity + Buttons */}
           <div className="mb-6 flex items-center gap-4">
             <div className="flex items-center border rounded px-3 py-1">
               <button onClick={() => setQuantity(Math.max(1, quantity - 1))}>-</button>
@@ -123,47 +183,52 @@ const JerseyProductPage = () => {
             </p>
           </div>
 
-          {/* Ratings Breakdown */}
-          <div className="mt-6">
-            <h2 className="text-xl font-semibold mb-2">Ratings</h2>
-            {Object.entries(ratings).map(([star, count]) => (
-              <div key={star} className="flex items-center mb-1">
-                <div className="flex text-yellow-500">
-                  {Array.from({ length: star }).map((_, i) => (
-                    <Star key={i} size={16} fill="currentColor" />
-                  ))}
-                </div>
-                <span className="ml-2 text-gray-600">{count} users</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Review Form */}
+          {/* Review Section */}
           <div className="mt-6">
             <h2 className="text-xl font-semibold mb-2">Write a Review</h2>
-            <input
-              type="text"
-              placeholder="Your Name"
-              className="w-full border rounded p-2 mb-2"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-            />
-            <textarea
-              className="w-full border rounded p-2 mb-2"
-              rows="3"
-              placeholder="Share your thoughts about this jersey..."
-              value={newReview}
-              onChange={(e) => setNewReview(e.target.value)}
-            />
-            <button
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-              onClick={handleAddReview}
-            >
-              Submit Review
-            </button>
+            {hasPurchased ? (
+              <>
+                {/* Star Rating Input */}
+                <div className="flex gap-1 mb-2">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      size={24}
+                      className="cursor-pointer"
+                      fill={i < newRating ? "gold" : "none"}
+                      onClick={() => setNewRating(i + 1)}
+                    />
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  placeholder="Your Name"
+                  className="w-full border rounded p-2 mb-2"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                />
+                <textarea
+                  className="w-full border rounded p-2 mb-2"
+                  rows="3"
+                  placeholder="Share your thoughts about this jersey..."
+                  value={newReview}
+                  onChange={(e) => setNewReview(e.target.value)}
+                />
+                <button
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                  onClick={handleAddReview}
+                >
+                  Submit Review
+                </button>
+              </>
+            ) : (
+              <p className="text-red-600">
+                ⚠️ You must purchase this product before leaving a review.
+              </p>
+            )}
           </div>
 
-          {/* Reviews List */}
+          {/* Reviews */}
           <div className="mt-6">
             <h2 className="text-xl font-semibold mb-2">
               Customer Reviews ({reviews.length} users)
@@ -174,6 +239,15 @@ const JerseyProductPage = () => {
                   key={rev.id}
                   className="border p-3 rounded mb-2 shadow-sm bg-gray-50"
                 >
+                  <div className="flex items-center text-yellow-500 mb-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star
+                        key={i}
+                        size={16}
+                        fill={i < rev.stars ? "currentColor" : "none"}
+                      />
+                    ))}
+                  </div>
                   <p className="font-semibold">{rev.name}</p>
                   <p className="text-gray-700">{rev.text}</p>
                 </div>
